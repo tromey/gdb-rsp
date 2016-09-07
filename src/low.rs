@@ -23,7 +23,7 @@ pub type RspResult<T> = Result<T, RspError>;
 #[derive(Clone, Copy)]
 pub enum Id {
     /// A process or thread id.  This value may not be 0 or -1.
-    Id(u64),
+    Id(u32),
     /// A special form meaning all processes or all threads of a given
     /// process.
     All,
@@ -36,13 +36,30 @@ pub enum Id {
 /// that is passed across the wire.  It needn't correspond to any real
 /// process id (though obviously it may be more convenient when it
 /// does).
-/// FIXME probably want a constructor
 #[derive(Clone, Copy)]
 pub struct ProcessId {
     /// The process id.
     pub pid: Id,
     /// The thread id.
     pub tid: Id,
+}
+
+impl ProcessId {
+    /// Make a new process/thread id.  |pid| is the process id; it
+    /// must be greater than or equal to zero.  |tid|, if given, is
+    /// the thread id.
+    pub fn new(pid: i32, tid: Option<i32>) -> ProcessId {
+        assert!(pid > 0);
+        let mut result = ProcessId { pid: Id::Id(pid as u32), tid: Id::Any };
+        match tid {
+            Some(value) => {
+                assert!(value > 0);
+                result.tid = Id::Id(value as u32);
+            }
+            None => { }
+        }
+        result
+    }
 }
 
 // fixme -
