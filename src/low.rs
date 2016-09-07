@@ -241,6 +241,8 @@ impl<'conn> RspConnection<'conn> {
     /// end of the connection, in particular using `QStartNoAckMode`,
     /// which is not done here.  Calling this method without this
     /// handshake will cause communication failures.
+    ///
+    /// There is no way to re-enable acking mode.
     pub fn disable_acking(&mut self) {
         self.acking = false;
         // Free any memory taken by the previous vec.
