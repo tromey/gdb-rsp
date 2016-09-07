@@ -78,8 +78,8 @@ pub struct RspConnection<'conn> {
     // True if we must ack packets.
     acking: bool,
 
-    // At least decide about RLE.
-    // FIXME our server side doesn't implement RLE yet.
+    // Whether we're a client or a server.  It makes a difference for
+    // some protocol details.
     is_client: bool,
 
     // If 0, not in a packet; otherwise holds the packet type.
@@ -390,18 +390,21 @@ impl<'conn> RspConnection<'conn> {
         // so we assume that some clients might not even bother
         // computing the checksum properly in this case (though
         // there's no evidence any actually does so).
-        if self.acking {
+        if self.acking  {
             let n = match (n1, n2) {
                 (Some(v1), Some(v2)) => v1 * 16 + v2,
                 // Pick an invalid value if we can't decode the checksum.
                 _ => !checksum,
             };
 
-            if n == checksum {
-                try!(self.wchan.write_all(b"+"))
-            } else {
-                try!(self.wchan.write_all(b"-"));
-                return Err(RspError::InvalidChecksum);
+            // No acks for notification packets.
+            if kind == b'$' {
+                if n == checksum {
+                    try!(self.wchan.write_all(b"+"))
+                } else {
+                    try!(self.wchan.write_all(b"-"));
+                    return Err(RspError::InvalidChecksum);
+                }
             }
         }
 
