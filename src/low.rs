@@ -335,8 +335,12 @@ impl<'conn> RspConnection<'conn> {
     /// encoding was done on the wire, it is expanded in the result.
     ///
     /// In acking mode, this method will send the ack.  However, it
-    /// does not try to re-read (FIXME??), but instead simply returns
-    /// `InvalidChecksum` when the checksum does not match.
+    /// does not try to re-read, but instead simply returns
+    /// `InvalidChecksum` when the checksum does not match -- the
+    /// caller should detect this situation and call `read_packet`
+    /// again.  This approach was taken to better handle the (possibly
+    /// impossible) case where a notification is delivered while
+    /// waiting for a packet to be resent.
     pub fn read_packet(&mut self) -> RspResult<(u8, Vec<u8>)> {
         let kind = try!(self.read_char());
         if kind != b'$' && kind != b'%' {
