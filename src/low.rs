@@ -12,6 +12,8 @@ pub enum RspError {
     /// checksums are only checked in "ack" mode; if `QStartNoAckMode`
     /// is used, then acking and checksum checking are disabled.
     InvalidChecksum,
+    /// The maximum number of ack retries was exceeded.
+    TooManyRetries,
 }
 
 /// The result of a RSP request.
@@ -62,7 +64,6 @@ impl ProcessId {
 
 // fixme -
 // multiprocess mode
-// maximum # retries
 /// An RSP connection.  This can represent either the client- or
 /// server- side of an RSP connection, and holds channels for sending
 /// to and receiving data from the other side of the connection.  It
@@ -88,6 +89,9 @@ pub struct RspConnection<'conn> {
 
     // When acking we must keep the last packet around.
     last_packet: Vec<u8>,
+
+    // The maximum number of times to retry an ack.
+    max_retries: Option<u16>,
 }
 
 impl<'conn> io::Write for RspConnection<'conn> {
@@ -131,7 +135,15 @@ impl<'conn> RspConnection<'conn> {
             in_packet: 0,
             checksum: 0,
             last_packet: Vec::new(),
+            max_retries: None,
         }
+    }
+
+    /// Set the maximum number of times that a packet can be resent.
+    /// This is only used when acking mode is enabled.  The default is
+    /// `None`.
+    pub fn set_maximum_retries(&mut self, max: Option<u16>) {
+        self.max_retries = max;
     }
 
     /// Start a new packet.  The caller is responsible for the entire
@@ -170,6 +182,8 @@ impl<'conn> RspConnection<'conn> {
     ///
     /// When the `RspConnection` is in acking mode, this method will
     /// read an ack, and will resend the current packet until acked.
+    /// This will respect any value set using `set_maximum_retries`,
+    /// returning `TooManyRetries` if this is exceeded.
     ///
     /// Note that this method does not read any other reply from the
     /// remote.  That is, on the client side, `read_packet` must be
@@ -184,10 +198,18 @@ impl<'conn> RspConnection<'conn> {
         try!(write!(self.wchan, "#{:02x}", self.checksum));
 
         if self.acking {
+            let mut count = 0;
             loop {
                 let ch = try!(self.read_char());
                 if ch == b'+' {
                     break;
+                }
+
+                if let Some(max) = self.max_retries {
+                    count = count + 1;
+                    if count > max {
+                        return Err(RspError::TooManyRetries);
+                    }
                 }
 
                 let buf = [kind];
