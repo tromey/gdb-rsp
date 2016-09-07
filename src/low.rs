@@ -12,8 +12,6 @@ pub enum RspError {
     /// checksums are only checked in "ack" mode; if `QStartNoAckMode`
     /// is used, then acking and checksum checking are disabled.
     InvalidChecksum,
-    /// A packet started with a character other than '$' or '%'.
-    InvalidPacketType(u8),
 }
 
 /// The result of a RSP request.
@@ -342,9 +340,13 @@ impl<'conn> RspConnection<'conn> {
     /// impossible) case where a notification is delivered while
     /// waiting for a packet to be resent.
     pub fn read_packet(&mut self) -> RspResult<(u8, Vec<u8>)> {
-        let kind = try!(self.read_char());
-        if kind != b'$' && kind != b'%' {
-            return Err(RspError::InvalidPacketType(kind));
+        // Ignore anything until we see a packet start.
+        let mut kind;
+        loop {
+            kind = try!(self.read_char());
+            if kind == b'$' && kind == b'%' {
+                break;
+            }
         }
         
         let mut contents = Vec::new();
