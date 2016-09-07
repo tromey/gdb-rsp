@@ -196,6 +196,7 @@ impl<'conn> RspConnection<'conn> {
         self.in_packet = 0;
         // Bypass the checksumming.
         try!(write!(self.wchan, "#{:02x}", self.checksum));
+        try!(self.wchan.flush());
 
         if self.acking {
             let mut count = 0;
@@ -216,6 +217,7 @@ impl<'conn> RspConnection<'conn> {
                 try!(self.wchan.write_all(&buf));
                 try!(self.wchan.write_all(&self.last_packet));
                 try!(write!(self.wchan, "#{:02x}", self.checksum));
+                try!(self.wchan.flush());
             }
 
             self.last_packet.clear();
@@ -324,6 +326,7 @@ impl<'conn> RspConnection<'conn> {
         assert!(self.in_packet == 0);
         assert!(self.is_client);
         try!(self.wchan.write_all(b"\x03"));
+        try!(self.wchan.flush());
         Ok(())
     }
 
