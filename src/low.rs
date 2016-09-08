@@ -1,10 +1,12 @@
 #![deny(missing_docs)]
 
 use std::io;
+use std::io::Read;
 use std::io::Write;
 
 /// A low-level error that occurred when communicating over the RSP
 /// connection.
+#[derive(Debug)]
 pub enum RspError {
     /// A wrapped I/O error.
     IOError(io::Error),
@@ -71,8 +73,8 @@ impl ProcessId {
 /// supplies a number of convenience methods for constructing and
 /// parsing RSP packets.
 pub struct RspConnection<'conn> {
-    wchan: &'conn mut io::Write,
-    rchan: &'conn mut io::Read,
+    wchan: &'conn mut Write,
+    rchan: &'conn mut Read,
 
     // True if we must ack packets.
     acking: bool,
@@ -94,7 +96,7 @@ pub struct RspConnection<'conn> {
     max_retries: Option<u16>,
 }
 
-impl<'conn> io::Write for RspConnection<'conn> {
+impl<'conn> Write for RspConnection<'conn> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let result = self.wchan.write(buf);
         if let Ok(nbytes) = result {
@@ -126,7 +128,7 @@ impl<'conn> RspConnection<'conn> {
     /// should be an RSP server.  (The two halves differ in some
     /// protocol details.)  The reader and writer should already be
     /// connected to the other side.
-    pub fn new(reader: &'conn mut io::Read, writer: &'conn mut io::Write, is_client: bool) -> RspConnection<'conn> {
+    pub fn new(reader: &'conn mut Read, writer: &'conn mut Write, is_client: bool) -> RspConnection<'conn> {
         RspConnection {
             wchan: writer,
             rchan: reader,
@@ -438,5 +440,27 @@ impl<'conn> RspConnection<'conn> {
         }
 
         Ok((kind, contents))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use std::io::Write;
+
+    #[test]
+    fn packets() {
+        let mut input: &[u8] = &[];
+        let mut output = Vec::new();
+        let expected = b"$qTfP#7b";
+        {
+            let mut rsp = ::RspConnection::new(&mut input,
+                                               &mut output,
+                                               true);
+            rsp.disable_acking();
+            rsp.start_packet().expect("start_packet");
+            rsp.write_all(b"qTfP").expect("write_all");
+            rsp.finish_packet().expect("finish_packet");
+        }
+        assert_eq!(output, expected);
     }
 }
