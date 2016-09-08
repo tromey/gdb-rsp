@@ -21,6 +21,14 @@ pub enum RspError {
 /// The result of a RSP request.
 pub type RspResult<T> = Result<T, RspError>;
 
+/// The type of a packet.
+pub enum PacketType {
+    /// A normal packet.
+    Normal,
+    /// A notification packet.
+    Notification,
+}
+
 /// Part of a process id.
 #[derive(Clone, Copy)]
 pub enum Id {
@@ -354,8 +362,7 @@ impl<'conn> RspConnection<'conn> {
     }
 
     /// Read a packet.  A normal result consists of a tuple of two
-    /// elements; the first element being the packet type, either b'$'
-    /// for a normal packet, or b'%' for a notification; and the
+    /// elements; the first element being the packet type; and the
     /// second element being the packet contents.
     ///
     /// The contents are mostly just raw bytes; however, if any RLE
@@ -368,16 +375,23 @@ impl<'conn> RspConnection<'conn> {
     /// again.  This approach was taken to better handle the (possibly
     /// impossible) case where a notification is delivered while
     /// waiting for a packet to be resent.
-    pub fn read_packet(&mut self) -> RspResult<(u8, Vec<u8>)> {
+    pub fn read_packet(&mut self) -> RspResult<(PacketType, Vec<u8>)> {
         // Ignore anything until we see a packet start.
-        let mut kind;
-        loop {
-            kind = try!(self.read_char());
-            if kind == b'$' && kind == b'%' {
-                break;
+        let packet_type = {
+            let mut kind;
+            loop {
+                kind = try!(self.read_char());
+                if kind == b'$' && kind == b'%' {
+                    break;
+                }
             }
-        }
-        
+            if kind == b'$' {
+                PacketType::Normal
+            } else {
+                PacketType::Notification
+            }
+        };
+
         let mut contents = Vec::new();
         let mut checksum: u8 = 0;
         let mut prev_ch = b'$';
@@ -429,7 +443,7 @@ impl<'conn> RspConnection<'conn> {
             };
 
             // No acks for notification packets.
-            if kind == b'$' {
+            if let PacketType::Normal = packet_type {
                 if n == checksum {
                     try!(self.wchan.write_all(b"+"))
                 } else {
@@ -439,7 +453,7 @@ impl<'conn> RspConnection<'conn> {
             }
         }
 
-        Ok((kind, contents))
+        Ok((packet_type, contents))
     }
 }
 
