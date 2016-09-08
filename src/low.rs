@@ -4,6 +4,8 @@ use std::io;
 use std::io::Read;
 use std::io::Write;
 
+use util::decode_hex;
+
 /// A low-level error that occurred when communicating over the RSP
 /// connection.
 #[derive(Debug)]
@@ -351,16 +353,6 @@ impl<'conn> RspConnection<'conn> {
         }
     }
 
-    // Decode a single hex character.
-    fn decode_hex(c: u8) -> Option<u8> {
-        match c {
-            b'0'...b'9' => Some(c - b'0'),
-            b'a'...b'f' => Some(c - b'a' + 10),
-            b'A'...b'F' => Some(c - b'A' + 10),
-            _ => None,
-        }
-    }
-
     /// Read a packet.  A normal result consists of a tuple of two
     /// elements; the first element being the packet type; and the
     /// second element being the packet contents.
@@ -427,8 +419,8 @@ impl<'conn> RspConnection<'conn> {
             }
         }
 
-        let n1 = Self::decode_hex(try!(self.read_char()));
-        let n2 = Self::decode_hex(try!(self.read_char()));
+        let n1 = try!(self.read_char());
+        let n2 = try!(self.read_char());
 
         // Only bother with checksum verification in acking mode.
         // This is a little sad maybe, but the manual says this is ok,
@@ -436,8 +428,8 @@ impl<'conn> RspConnection<'conn> {
         // computing the checksum properly in this case (though
         // there's no evidence any actually does so).
         if self.acking  {
-            let n = match (n1, n2) {
-                (Some(v1), Some(v2)) => v1 * 16 + v2,
+            let n = match decode_hex(&[n1, n2]) {
+                Some(v) => v as u8,
                 // Pick an invalid value if we can't decode the checksum.
                 _ => !checksum,
             };
