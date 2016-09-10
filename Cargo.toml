@@ -1,10 +1,11 @@
 [package]
-name = "gdb-rsp"
-version = "0.1.0"
 authors = ["Tom Tromey <tom@tromey.com>"]
 description = "An implementation of the GDB Remote Serial Protocol."
 keywords = ["GDB", "debug", "protocol"]
+name = "gdb-rsp"
 readme = "./README.md"
 repository = "https://github.com/tromey/gdb-rsp"
+version = "0.1.0"
 
 [dependencies]
+nom = "*"
