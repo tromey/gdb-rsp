@@ -5,28 +5,22 @@ use low::{Id, ProcessId};
 
 /// Accept two hex digits and convert them to a `u8`.
 pub fn parse_2_hex(input: &[u8]) -> IResult<&[u8], u8> {
-    // Taken from nom's hex_u32.
-    match is_a!(input, &b"0123456789abcdef"[..]) {
-        Error(e)    => Error(e),
-        Incomplete(e) => Incomplete(e),
-        Done(i,o) => {
-            let mut res = 0u8;
-
-            // Do not parse more than 2 characters
-            let mut remaining = i;
-            let mut parsed    = o;
-            if o.len() > 2 {
-                remaining = &input[2..];
-                parsed    = &input[..2];
+    match take!(input, 2) {
+        Done(rest, hex) => {
+            let mut result = 0;
+            for c in hex.iter() {
+                match (*c as char).to_digit(16) {
+                    None => {
+                        let pos = Err::Position(ErrorKind::HexDigit, input);
+                        return Error(pos);
+                    },
+                    Some(v) => result = result << 4 + v,
+                }
             }
-
-            for &e in parsed {
-                let digit = e as char;
-                let value = digit.to_digit(16).unwrap_or(0) as u8;
-                res = value + (res << 4);
-            }
-            Done(remaining, res)
+            IResult::Done(rest, result as u8)
         }
+        Incomplete(x) => Incomplete(x),
+        Error(x) => Error(x),
     }
 }
 
