@@ -2,23 +2,20 @@
 use nom::*;
 use nom::IResult::*;
 use low::{Id, ProcessId};
+use util::decode_hex;
 
 /// Accept two hex digits and convert them to a `u8`.
 pub fn parse_2_hex(input: &[u8]) -> IResult<&[u8], u8> {
     match take!(input, 2) {
         Done(rest, hex) => {
-            let mut result = 0;
-            for c in hex.iter() {
-                match (*c as char).to_digit(16) {
-                    None => {
-                        let pos = Err::Position(ErrorKind::HexDigit, input);
-                        return Error(pos);
-                    },
-                    Some(v) => result = result << 4 + v,
-                }
+            match decode_hex(hex) {
+                None => {
+                    let pos = Err::Position(ErrorKind::HexDigit, input);
+                    return Error(pos);
+                },
+                Some(v) => IResult::Done(rest, v as u8)
             }
-            IResult::Done(rest, result as u8)
-        }
+        },
         Incomplete(x) => Incomplete(x),
         Error(x) => Error(x),
     }
