@@ -304,12 +304,3 @@ named!(pub parse_qsymbol<&[u8], Option<Vec<u8>> >,
             | chain!(tag!("qSymbol:")
                      ~ data: parse_hex_data
                      , || { data }) => { |v| Some(v) }));
-
-// not clear we want to bother with this
-// named!(pub parse_packet_start<&[u8]> -> PacketType,
-//        alt!(tag!("$") => { |_| PacketType::Normal }
-//             | tag!("%") => { |_| PacketType::Notification }));
-
-// named~(pub parse_packet<&[u8]>,
-//        chain!(kind: parse_packet_start
-
