@@ -48,7 +48,7 @@ pub enum NormalPacketResponse {
 
 /// Parse a simple RSP reply.  A simple reply is defined here as
 /// either the empty packet (meaning that the request packet is not
-/// recognized); an OK packet, or an error packet.
+/// recognized); an OK packet; or an error packet.
 named!(pub parse_simple_reply<&[u8], NormalPacketResponse>,
        alt!(parse_ok => { |_| NormalPacketResponse::Ok }
             | parse_error => { |e| NormalPacketResponse::Error(e) }
