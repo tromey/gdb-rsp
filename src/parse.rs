@@ -50,9 +50,9 @@ pub enum NormalPacketResponse {
 /// either the empty packet (meaning that the request packet is not
 /// recognized); an OK packet; or an error packet.
 named!(pub parse_simple_reply<&[u8], NormalPacketResponse>,
-       alt!(parse_ok => { |_| NormalPacketResponse::Ok }
-            | parse_error => { |e| NormalPacketResponse::Error(e) }
-            | eof => { |_| NormalPacketResponse::Unsupported }));
+       alt_complete!(parse_ok => { |_| NormalPacketResponse::Ok }
+                     | parse_error => { |e| NormalPacketResponse::Error(e) }
+                     | eof => { |_| NormalPacketResponse::Unsupported }));
 
 /// Parse a sequence of paired hex digits into a vector.
 named!(pub parse_hex_data<&[u8], Vec<u8> >,
@@ -148,8 +148,8 @@ named!(parse_t_library<&[u8], StopReplyValue>,
 // Helper for T packet.  Parse "replaylog".
 named!(parse_t_replaylog<&[u8], StopReplyValue>,
        chain!(tag!("replaylog:")
-              ~ result: alt!(tag!("begin") => { |_| true }
-                             | tag!("end") => { |_| false })
+              ~ result: alt_complete!(tag!("begin") => { |_| true }
+                                      | tag!("end") => { |_| false })
               , || StopReplyValue::ReplayLog(result)));
 
 // Helper for T packet.  Parse "swbreak".
@@ -261,19 +261,19 @@ named!(pub parse_inferior_output<&[u8], Vec<u8> >,
 
 /// Helper for parse_thread_id that parses a single thread-id element.
 named!(pub parse_thread_id_element<&[u8], Id>,
-       alt!(tag!("0") => { |_| Id::Any }
-            | tag!("-1") => { |_| Id::All }
-            | parse_hex_number => { |val: u64| Id::Id(val as u32) }));
+       alt_complete!(tag!("0") => { |_| Id::Any }
+                     | tag!("-1") => { |_| Id::All }
+                     | parse_hex_number => { |val: u64| Id::Id(val as u32) }));
 
 /// Parse a thread-id.
 named!(pub parse_thread_id<&[u8], ProcessId>,
-       alt!(parse_thread_id_element => { |pid| ProcessId { pid: pid, tid: Id::Any } }
-            | chain!(tag!("p")
-                     ~ pid: parse_thread_id_element
-                     ~ tag!(".")
-                     ~ tid: parse_thread_id_element
-                     // FIXME error checking here?
-                     , { || ProcessId { pid: pid, tid: tid } })));
+       alt_complete!(parse_thread_id_element => { |pid| ProcessId { pid: pid, tid: Id::Any } }
+                     | chain!(tag!("p")
+                              ~ pid: parse_thread_id_element
+                              ~ tag!(".")
+                              ~ tid: parse_thread_id_element
+                              // FIXME error checking here?
+                              , { || ProcessId { pid: pid, tid: tid } })));
 
 /// Parse the result of the `qC` packet.  Note that this does not
 /// handle the "anything else" case; that must be done elsewhere.
@@ -295,12 +295,12 @@ named!(pub parse_thread_id_list<&[u8], Vec<ProcessId> >,
 
 /// Parse a single `qfThreadInfo` or `qsThreadInfo` reply.
 named!(pub parse_thread_info_reply<&[u8], Option<Vec<ProcessId>> >,
-       alt!(tag!("l") => { |_| None }
-            | parse_thread_id_list => { |v| Some(v) }));
+       alt_complete!(tag!("l") => { |_| None }
+                     | parse_thread_id_list => { |v| Some(v) }));
 
 /// Parse a `qSymbol` response.
 named!(pub parse_qsymbol<&[u8], Option<Vec<u8>> >,
-       alt!(tag!("OK") => { |_| None }
-            | chain!(tag!("qSymbol:")
-                     ~ data: parse_hex_data
-                     , || { data }) => { |v| Some(v) }));
+       alt_complete!(tag!("OK") => { |_| None }
+                     | chain!(tag!("qSymbol:")
+                              ~ data: parse_hex_data
+                              , || { data }) => { |v| Some(v) }));
