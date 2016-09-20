@@ -32,7 +32,7 @@ pub enum PacketType {
 }
 
 /// Part of a process id.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub enum Id {
     /// A process or thread id.  This value may not be 0 or -1.
     Id(u32),
@@ -48,7 +48,7 @@ pub enum Id {
 /// that is passed across the wire.  It needn't correspond to any real
 /// process id (though obviously it may be more convenient when it
 /// does).
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct ProcessId {
     /// The process id.
     pub pid: Id,
