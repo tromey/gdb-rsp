@@ -330,4 +330,3 @@ named!(pub parse_memory<&[u8], ClientResult< Vec<u8> > >,
        alt_complete!(parse_error => { |e| Err(ClientError::ErrorPacket(e)) }
                      | parse_hex_data => { |data| Ok(data) }
                      | eof => { |_| Err(ClientError::Unsupported) }));
-
