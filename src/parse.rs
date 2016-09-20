@@ -3,6 +3,7 @@ use nom::*;
 use nom::IResult::*;
 use low::{Id, ProcessId, RspError};
 use util::decode_hex;
+use std::io;
 
 /// Accept two hex digits and convert them to a `u8`.
 pub fn parse_2_hex(input: &[u8]) -> IResult<&[u8], u8> {
@@ -47,6 +48,8 @@ pub enum ClientError {
     ErrorPacket(u8),
     /// Unsupported request.
     Unsupported,
+    /// Unrecognized response.
+    Unrecognized,
 }
 
 pub type ClientResult<T> = Result<T, ClientError>;
@@ -54,6 +57,12 @@ pub type ClientResult<T> = Result<T, ClientError>;
 impl From<RspError> for ClientError {
     fn from(t: RspError) -> Self {
         ClientError::RspError(t)
+    }
+}
+
+impl From<io::Error> for ClientError {
+    fn from(t: io::Error) -> Self {
+        ClientError::RspError(RspError::IOError(t))
     }
 }
 
