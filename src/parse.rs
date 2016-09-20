@@ -1,7 +1,7 @@
 
 use nom::*;
 use nom::IResult::*;
-use low::{Id, ProcessId};
+use low::{Id, ProcessId, RspError};
 use util::decode_hex;
 
 /// Accept two hex digits and convert them to a `u8`.
@@ -39,20 +39,31 @@ named!(pub parse_ok<&[u8], ()>,
               ~ eof
               , || ()));
 
-pub enum NormalPacketResponse {
-    Ok,
+#[derive(Debug)]
+pub enum ClientError {
+    /// A wrapped RspError
+    RspError(RspError),
+    /// An error packet.  (FIXME distinguish from an error)
+    ErrorPacket(u8),
+    /// Unsupported request.
     Unsupported,
-    Error(u8),
-    InvalidResponse,
+}
+
+pub type ClientResult<T> = Result<T, ClientError>;
+
+impl From<RspError> for ClientError {
+    fn from(t: RspError) -> Self {
+        ClientError::RspError(t)
+    }
 }
 
 /// Parse a simple RSP reply.  A simple reply is defined here as
 /// either the empty packet (meaning that the request packet is not
 /// recognized); an OK packet; or an error packet.
-named!(pub parse_simple_reply<&[u8], NormalPacketResponse>,
-       alt_complete!(parse_ok => { |_| NormalPacketResponse::Ok }
-                     | parse_error => { |e| NormalPacketResponse::Error(e) }
-                     | eof => { |_| NormalPacketResponse::Unsupported }));
+named!(pub parse_simple_reply<&[u8], ClientResult<()> >,
+       alt_complete!(parse_ok => { |_| Ok(()) }
+                     | parse_error => { |e| Err(ClientError::ErrorPacket(e)) }
+                     | eof => { |_| Err(ClientError::Unsupported) }));
 
 /// Parse a sequence of paired hex digits into a vector.
 named!(pub parse_hex_data<&[u8], Vec<u8> >,
