@@ -4,12 +4,13 @@
 pub fn decode_hex(seq: &[u8]) -> Option<u64> {
     let mut result = 0;
     for c in seq {
+        result <<= 4;
         match (*c as char).to_digit(16) {
-            Some(v) => result = result << 4 + v,
+            Some(v) => result += v,
             None => return None,
         };
     }
-    Some(result)
+    Some(result as u64)
 }
 
 #[cfg(test)]
