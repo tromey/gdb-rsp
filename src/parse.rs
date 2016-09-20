@@ -324,3 +324,10 @@ named!(pub parse_qsymbol<&[u8], Option<Vec<u8>> >,
                      | chain!(tag!("qSymbol:")
                               ~ data: parse_hex_data
                               , || { data }) => { |v| Some(v) }));
+
+/// Parse a memory packet (`m`) response.
+named!(pub parse_memory<&[u8], ClientResult< Vec<u8> > >,
+       alt_complete!(parse_error => { |e| Err(ClientError::ErrorPacket(e)) }
+                     | parse_hex_data => { |data| Ok(data) }
+                     | eof => { |_| Err(ClientError::Unsupported) }));
+
