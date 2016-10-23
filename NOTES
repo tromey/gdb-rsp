@@ -1,0 +1,52 @@
+   Specifically, notifications may appear when GDB is not otherwise
+reading input from the stub, or when GDB is expecting to read a normal
+synchronous response or a '+'/'-' acknowledgment to a packet it has
+sent.  Notification packets are distinct from any other communication
+from the stub so there is no ambiguity.
+
+--> uh oh
+
+
+* maybe if start_packet is called again we should terminate the
+  previous packet with an invalid checksum
+  no.  we should buffer.
+
+* handling the O packet properly
+
+* 'cargo add --help' => "Could not add dependency.", ERROR blah blah
+  maybe a bug in docopt?  or older version thereof?
+
+x typo "dependant"
+
+x description of z0 packet has a stray "see architecture-..."
+  should mention this is in relation to KIND
+  doesn't specify how KIND should be written
+
+x can a Z1 packet have cmds?
+
+x is there a way to probe for cond/cmd support in Z packets?
+  [ConditionalBreakpoints]
+
+x vcont "create" packet should document that R is ignored
+
+x 'software' vs 'memory' breakpoint
+
+x "W" and "X" stop reply packets accept longer hex values
+  but documented as 2 digits
+
+x stop reply packets dont really mention what to do in non-stop?
+  just "OK" is sent
+
+* `A' packet doesn't seem well-defined enough
+  or implemented
+
+* move all deprecated stuff to a new section
+
+x docs say %%Stop:...
+  but probably should be %Stop:...
+
+* docs are also confused about notification packet in ACK mode
+  well a bit, replies are normal packets apparently?
+
+  there's no documentation about what ack you should send if you can't
+  parse a notification
