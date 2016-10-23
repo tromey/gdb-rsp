@@ -279,6 +279,19 @@ named!(pub parse_inferior_output<&[u8], Vec<u8> >,
               ~ data: parse_hex_data
               , { || data }));
 
+/// Parse a stop-reply packet.  Note that in non-stop mode you should
+/// use `parse_stop_reply_non_stop`.
+named!(pub parse_stop_reply<&[u8], Vec<StopReplyValue> >,
+       alt_complete!(
+           parse_stop_signal => {
+               |value| Vec::new([StopReplyValue::Signal(value)])
+           }
+           | parse_stop_signal_full
+           | parse_stop_exit => {
+               |value, pid|  ...
+           }
+           | parse_
+
 /// Helper for parse_thread_id that parses a single thread-id element.
 named!(pub parse_thread_id_element<&[u8], Id>,
        alt_complete!(tag!("0") => { |_| Id::Any }

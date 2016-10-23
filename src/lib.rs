@@ -1,6 +1,8 @@
 #[macro_use]
 extern crate nom;
 
+mod client;
+
 mod low;
 pub use low::*;
 
